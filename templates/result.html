@@ -1,0 +1,13 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="result-container">
+    <h2>Generated Prompt</h2>
+    <pre>{{ prompt }}</pre>
+
+    <h2>Claude's Answer</h2>
+    <pre>{{ answer }}</pre>
+
+    <a href="/">🔙 Back to Form</a>
+</div>
+{% endblock %}

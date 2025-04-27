@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="form-container">
+    <form method="post" action="/send">
+        <label for="input_channel">Input Channel (읽을 채널)</label>
+        <select id="input_channel" name="input_channel" required>
+            {% for id, name in channels %}
+            <option value="{{ id }}">{{ name }}</option>
+            {% endfor %}
+        </select>
+
+        <label for="output_channel">Output Channel (답변 보낼 채널)</label>
+        <select id="output_channel" name="output_channel" required>
+            {% for id, name in channels %}
+            <option value="{{ id }}">{{ name }}</option>
+            {% endfor %}
+        </select>
+
+        <label for="message">User Message (Claude에게 보낼 질문)</label>
+        <textarea id="message" name="message" rows="6" required placeholder="Slack 대화 문맥과 함께 Claude에게 질문할 내용을 입력하세요"></textarea>
+
+        <button type="submit">Send to Claude</button>
+    </form>
+</div>
+{% endblock %}
