@@ -1,0 +1,12 @@
+version: '3.8'
+
+services:
+  mcp-server:
+    build: .
+    container_name: mcp-server
+    ports:
+      - "5000:5000"
+    environment:
+      - SLACK_TOKEN=xoxb-여기에_너의_슬랙_토큰
+      - CHANNEL_ID=C01ABCDEF
+    restart: unless-stopped

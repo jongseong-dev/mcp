@@ -1,0 +1,661 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Claude-Slack Bridge</title>
+    <style>
+        :root {
+            --primary-color: #4a154b;
+            --secondary-color: #36c5f0;
+            --accent-color: #ecb22e;
+            --text-color: #1d1c1d;
+            --light-gray: #f8f8f8;
+            --border-color: #ddd;
+            --success-color: #2eb67d;
+            --error-color: #e01e5a;
+        }
+
+        body {
+            font-family: 'Lato', 'Noto Sans KR', sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: var(--light-gray);
+            color: var(--text-color);
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        header {
+            background-color: var(--primary-color);
+            color: white;
+            padding: 20px 0;
+            text-align: center;
+            margin-bottom: 30px;
+            border-radius: 8px;
+        }
+
+        h1 {
+            margin: 0;
+            font-size: 2em;
+        }
+
+        .card {
+            background-color: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            margin-bottom: 20px;
+            padding: 20px;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        label {
+            display: block;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+
+        input[type="text"],
+        input[type="number"],
+        select,
+        textarea {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            font-size: 16px;
+            box-sizing: border-box;
+        }
+
+        textarea {
+            min-height: 150px;
+            resize: vertical;
+        }
+
+        button {
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            padding: 12px 20px;
+            font-size: 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+
+        button:hover {
+            background-color: #611f69;
+        }
+
+        button:disabled {
+            background-color: #ccc;
+            cursor: not-allowed;
+        }
+
+        .btn-secondary {
+            background-color: var(--secondary-color);
+        }
+
+        .btn-secondary:hover {
+            background-color: #2baadc;
+        }
+
+        .tabs {
+            display: flex;
+            margin-bottom: 20px;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .tab {
+            padding: 10px 20px;
+            cursor: pointer;
+            border-bottom: 3px solid transparent;
+        }
+
+        .tab.active {
+            border-bottom-color: var(--primary-color);
+            font-weight: bold;
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .alert {
+            padding: 15px;
+            border-radius: 4px;
+            margin-bottom: 20px;
+            display: none;
+        }
+
+        .alert-success {
+            background-color: rgba(46, 182, 125, 0.2);
+            border: 1px solid var(--success-color);
+            color: var(--success-color);
+        }
+
+        .alert-error {
+            background-color: rgba(224, 30, 90, 0.2);
+            border: 1px solid var(--error-color);
+            color: var(--error-color);
+        }
+
+        .history {
+            margin-top: 30px;
+        }
+
+        .history-item {
+            border-left: 4px solid var(--secondary-color);
+            padding-left: 15px;
+            margin-bottom: 15px;
+        }
+
+        .history-item h3 {
+            margin-top: 0;
+            margin-bottom: 5px;
+            font-size: 16px;
+        }
+
+        .history-timestamp {
+            color: #777;
+            font-size: 12px;
+            margin-bottom: 10px;
+        }
+
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 20px;
+        }
+
+        .spinner {
+            border: 4px solid rgba(0, 0, 0, 0.1);
+            border-radius: 50%;
+            border-top: 4px solid var(--primary-color);
+            width: 30px;
+            height: 30px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 10px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .message-preview {
+            max-height: 300px;
+            overflow-y: auto;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            padding: 10px;
+            margin-top: 10px;
+            background-color: var(--light-gray);
+        }
+
+        .message-item {
+            margin-bottom: 10px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .message-item:last-child {
+            border-bottom: none;
+        }
+
+        .message-user {
+            font-weight: bold;
+        }
+
+        .message-time {
+            font-size: 12px;
+            color: #777;
+            margin-left: 5px;
+        }
+
+        .message-text {
+            margin-top: 5px;
+            white-space: pre-wrap;
+        }
+
+        .channel-selector {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+
+        .channel-selector select {
+            flex-grow: 1;
+        }
+
+        .refresh-btn {
+            white-space: nowrap;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Claude-Slack Bridge</h1>
+            <p>Slack 채널 메시지를 읽고 Claude API로 질문하여 결과를 Slack으로 전송합니다</p>
+        </header>
+
+        <div id="alertBox" class="alert"></div>
+
+        <div class="loading" id="loadingIndicator">
+            <div class="spinner"></div>
+            <p>처리 중입니다...</p>
+        </div>
+
+        <div class="card">
+            <h2>Slack 채널 메시지 읽기</h2>
+
+            <div class="form-group">
+                <label for="source_channel_dropdown">소스 Slack 채널</label>
+                <div class="channel-selector">
+                    <select id="source_channel_dropdown" name="source_channel_dropdown">
+                        <option value="">채널 목록을 불러오는 중...</option>
+                    </select>
+                    <button type="button" id="refreshChannels" class="btn-secondary refresh-btn">새로고침</button>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label for="manual_channel_id">또는 채널 ID 직접 입력</label>
+                <input type="text" id="manual_channel_id" name="manual_channel_id" placeholder="예: C01234ABCDE">
+            </div>
+
+            <div class="form-group">
+                <label for="message_limit">가져올 메시지 수</label>
+                <input type="number" id="message_limit" name="message_limit" value="50" min="5" max="1000">
+                <button type="button" id="fetchMessages" class="btn-secondary">메시지 가져오기</button>
+            </div>
+
+            <div id="messagePreview" class="message-preview" style="display: none;">
+                <h3>메시지 미리보기</h3>
+                <div id="messageList"></div>
+            </div>
+        </div>
+
+        <div class="card">
+            <h2>Claude에게 질문하기</h2>
+            <form id="questionForm">
+                <div class="form-group">
+                    <label for="question">질문 내용</label>
+                    <textarea id="question" name="question" placeholder="Slack 메시지 컨텍스트를 바탕으로 Claude에게 질문할 내용" required></textarea>
+                </div>
+
+                <div class="form-group">
+                    <label for="output_channel_dropdown">결과를 보낼 Slack 채널</label>
+                    <div class="channel-selector">
+                        <select id="output_channel_dropdown" name="output_channel_dropdown">
+                            <option value="">채널 목록을 불러오는 중...</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="manual_output_channel">또는 채널 ID 직접 입력</label>
+                    <input type="text" id="manual_output_channel" name="manual_output_channel" placeholder="예: C01234ABCDE">
+                </div>
+
+                <div class="form-group">
+                    <label for="thread_ts">Thread TS (선택사항)</label>
+                    <input type="text" id="thread_ts" name="thread_ts" placeholder="특정 스레드에 답변하려면 입력하세요">
+                </div>
+
+                <div class="form-group">
+                    <label for="model">모델</label>
+                    <select id="model" name="model">
+                        <option value="claude-3-7-sonnet-20250219" selected>Claude 3.7 Sonnet</option>
+                        <option value="claude-3-5-sonnet-20240620">Claude 3.5 Sonnet</option>
+                        <option value="claude-3-opus-20240229">Claude 3 Opus</option>
+                        <option value="claude-3-5-haiku-20240307">Claude 3.5 Haiku</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="max_tokens">최대 토큰 수</label>
+                    <input type="number" id="max_tokens" name="max_tokens" value="4096" min="100" max="100000">
+                </div>
+
+                <div class="form-group">
+                    <label for="temperature">Temperature (0.0 ~ 1.0)</label>
+                    <input type="number" id="temperature" name="temperature" value="0.7" min="0" max="1" step="0.1">
+                </div>
+
+                <div class="form-group">
+                    <label for="system_prompt">시스템 프롬프트 (선택사항)</label>
+                    <textarea id="system_prompt" name="system_prompt" placeholder="Claude에게 제공할 시스템 프롬프트를 입력하세요"></textarea>
+                </div>
+
+                <button type="submit" id="submitQuestion">질문하기</button>
+            </form>
+        </div>
+
+        <div class="history">
+            <h2>최근 요청</h2>
+            <div id="historyItems"></div>
+        </div>
+    </div>
+
+    <script>
+        // 전역 변수
+        const API_KEY = localStorage.getItem('apiKey') || prompt('API 키를 입력하세요:');
+        localStorage.setItem('apiKey', API_KEY);
+
+        const API_BASE_URL = window.location.origin;
+        const historyItems = JSON.parse(localStorage.getItem('historyItems') || '[]');
+        let currentChannelId = '';
+        let currentMessages = [];
+
+        // DOM 요소 참조
+        const alertBox = document.getElementById('alertBox');
+        const loadingIndicator = document.getElementById('loadingIndicator');
+        const historyItemsContainer = document.getElementById('historyItems');
+        const sourceChannelDropdown = document.getElementById('source_channel_dropdown');
+        const outputChannelDropdown = document.getElementById('output_channel_dropdown');
+        const manualChannelId = document.getElementById('manual_channel_id');
+        const manualOutputChannel = document.getElementById('manual_output_channel');
+        const messageLimit = document.getElementById('message_limit');
+        const fetchMessagesBtn = document.getElementById('fetchMessages');
+        const refreshChannelsBtn = document.getElementById('refreshChannels');
+        const messagePreview = document.getElementById('messagePreview');
+        const messageList = document.getElementById('messageList');
+        const questionForm = document.getElementById('questionForm');
+
+        // 알림 표시 함수
+        function showAlert(message, type = 'error') {
+            alertBox.textContent = message;
+            alertBox.className = `alert alert-${type}`;
+            alertBox.style.display = 'block';
+
+            // 5초 후 알림 숨기기
+            setTimeout(() => {
+                alertBox.style.display = 'none';
+            }, 5000);
+        }
+
+        // 로딩 인디케이터 표시/숨기기
+        function setLoading(isLoading) {
+            loadingIndicator.style.display = isLoading ? 'block' : 'none';
+        }
+
+        // API 요청 헬퍼 함수
+        async function apiRequest(endpoint, data, method = 'POST') {
+            setLoading(true);
+
+            try {
+                const options = {
+                    method,
+                    headers: {
+                        'X-API-Key': API_KEY
+                    }
+                };
+
+                if (method === 'POST') {
+                    options.headers['Content-Type'] = 'application/json';
+                    options.body = JSON.stringify(data);
+                }
+
+                const response = await fetch(`${API_BASE_URL}${endpoint}`, options);
+
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.detail || '요청 처리 중 오류가 발생했습니다.');
+                }
+
+                return await response.json();
+            } catch (error) {
+                console.error('API 오류:', error);
+                throw error;
+            } finally {
+                setLoading(false);
+            }
+        }
+
+        // 히스토리 항목 추가
+        function addHistoryItem(data) {
+            const timestamp = new Date().toLocaleString();
+
+            const historyItem = {
+                sourceChannel: data.sourceChannel,
+                outputChannel: data.outputChannel,
+                question: data.question,
+                messageCount: data.messageCount,
+                timestamp,
+                model: data.model
+            };
+
+            historyItems.unshift(historyItem);
+            if (historyItems.length > 10) historyItems.pop();
+
+            localStorage.setItem('historyItems', JSON.stringify(historyItems));
+            renderHistoryItems();
+        }
+
+        // 히스토리 목록 렌더링
+        function renderHistoryItems() {
+            historyItemsContainer.innerHTML = '';
+
+            if (historyItems.length === 0) {
+                historyItemsContainer.innerHTML = '<p>아직 요청 기록이 없습니다.</p>';
+                return;
+            }
+
+            historyItems.forEach((item) => {
+                const historyElement = document.createElement('div');
+                historyElement.className = 'history-item';
+
+                historyElement.innerHTML = `
+                    <h3>${item.question.substring(0, 50)}${item.question.length > 50 ? '...' : ''}</h3>
+                    <div class="history-timestamp">${item.timestamp}</div>
+                    <p>소스 채널: ${item.sourceChannel}, 출력 채널: ${item.outputChannel}</p>
+                    <p>메시지 수: ${item.messageCount}, 모델: ${item.model}</p>
+                `;
+
+                historyItemsContainer.appendChild(historyElement);
+            });
+        }
+
+        // Slack 채널 목록 가져오기
+        async function fetchSlackChannels() {
+            try {
+                const result = await apiRequest('/api/slack/channels', {}, 'GET');
+
+                // 드롭다운 옵션 초기화
+                sourceChannelDropdown.innerHTML = '';
+                outputChannelDropdown.innerHTML = '';
+
+                // 기본 옵션 추가
+                const defaultOption = document.createElement('option');
+                defaultOption.value = '';
+                defaultOption.textContent = '채널 선택...';
+                sourceChannelDropdown.appendChild(defaultOption.cloneNode(true));
+                outputChannelDropdown.appendChild(defaultOption);
+
+                // 채널 목록 추가
+                result.channels.forEach(channel => {
+                    const option = document.createElement('option');
+                    option.value = channel.id;
+                    option.textContent = `${channel.is_private ? '🔒' : '#'} ${channel.name} (${channel.member_count}명)`;
+
+                    sourceChannelDropdown.appendChild(option.cloneNode(true));
+                    outputChannelDropdown.appendChild(option);
+                });
+
+                showAlert('채널 목록을 성공적으로 가져왔습니다.', 'success');
+            } catch (error) {
+                showAlert('채널 목록을 가져오는데 실패했습니다: ' + error.message);
+
+                // 기본 옵션 추가
+                sourceChannelDropdown.innerHTML = '<option value="">채널 선택...</option>';
+                outputChannelDropdown.innerHTML = '<option value="">채널 선택...</option>';
+            }
+        }
+
+        // Slack 메시지 가져오기
+        async function fetchSlackMessages() {
+            // 채널 ID 가져오기 (드롭다운 또는 수동 입력)
+            const channelId = sourceChannelDropdown.value || manualChannelId.value;
+
+            if (!channelId) {
+                showAlert('채널 ID를 선택하거나 입력해주세요.');
+                return;
+            }
+
+            currentChannelId = channelId;
+
+            try {
+                const limit = parseInt(messageLimit.value) || 50;
+                const result = await apiRequest(`/api/slack/messages/${channelId}?limit=${limit}`, {}, 'GET');
+
+                currentMessages = result.messages;
+
+                // 메시지 미리보기 표시
+                renderMessagePreview(currentMessages);
+
+                showAlert(`${result.count}개의 메시지를 가져왔습니다.`, 'success');
+            } catch (error) {
+                showAlert('메시지를 가져오는데 실패했습니다: ' + error.message);
+                messagePreview.style.display = 'none';
+            }
+        }
+
+        // 메시지 미리보기 렌더링
+        function renderMessagePreview(messages) {
+            messageList.innerHTML = '';
+
+            if (messages.length === 0) {
+                messageList.innerHTML = '<p>메시지가 없습니다.</p>';
+                messagePreview.style.display = 'block';
+                return;
+            }
+
+            messages.forEach(msg => {
+                const messageElement = document.createElement('div');
+                messageElement.className = 'message-item';
+
+                messageElement.innerHTML = `
+                    <div>
+                        <span class="message-user">${msg.user}</span>
+                        <span class="message-time">${msg.timestamp}</span>
+                    </div>
+                    <div class="message-text">${msg.text}</div>
+                `;
+
+                messageList.appendChild(messageElement);
+            });
+
+            messagePreview.style.display = 'block';
+        }
+
+        // Claude에게 질문하기
+        async function askClaudeWithSlackContext(formData) {
+            if (!currentChannelId || currentMessages.length === 0) {
+                showAlert('먼저 Slack 메시지를 가져와주세요.');
+                return;
+            }
+
+            // 출력 채널 가져오기 (드롭다운 또는 수동 입력)
+            const outputChannel = outputChannelDropdown.value || manualOutputChannel.value;
+
+            if (!outputChannel) {
+                showAlert('결과를 보낼 Slack 채널을 선택하거나 입력해주세요.');
+                return;
+            }
+
+            try {
+                const data = {
+                    channel_id: currentChannelId,
+                    message_limit: parseInt(messageLimit.value) || 50,
+                    question: formData.get('question'),
+                    slack_output_channel: outputChannel,
+                    thread_ts: formData.get('thread_ts') || null,
+                    model: formData.get('model'),
+                    max_tokens: parseInt(formData.get('max_tokens')),
+                    temperature: parseFloat(formData.get('temperature')),
+                    system: formData.get('system_prompt') || null
+                };
+
+                const result = await apiRequest('/ask_with_slack', data, 'POST');
+
+                showAlert(result.message, 'success');
+
+                // 히스토리에 추가
+                addHistoryItem({
+                    sourceChannel: currentChannelId,
+                    outputChannel: outputChannel,
+                    question: data.question,
+                    messageCount: currentMessages.length,
+                    model: data.model
+                });
+            } catch (error) {
+                showAlert('Claude에게 질문하는데 실패했습니다: ' + error.message);
+            }
+        }
+
+        // 이벤트 리스너
+        document.addEventListener('DOMContentLoaded', () => {
+            // 채널 목록 가져오기
+            fetchSlackChannels();
+
+            // 히스토리 렌더링
+            renderHistoryItems();
+
+            // 채널 새로고침 버튼
+            refreshChannelsBtn.addEventListener('click', fetchSlackChannels);
+
+            // 메시지 가져오기 버튼
+            fetchMessagesBtn.addEventListener('click', fetchSlackMessages);
+
+            // 질문 제출
+            questionForm.addEventListener('submit', (event) => {
+                event.preventDefault();
+                const formData = new FormData(questionForm);
+                askClaudeWithSlackContext(formData);
+            });
+
+            // 채널 드롭다운 변경 시 수동 입력 필드 비우기
+            sourceChannelDropdown.addEventListener('change', () => {
+                if (sourceChannelDropdown.value) {
+                    manualChannelId.value = '';
+                }
+            });
+
+            // 수동 채널 ID 입력 시 드롭다운 선택 해제
+            manualChannelId.addEventListener('input', () => {
+                if (manualChannelId.value) {
+                    sourceChannelDropdown.value = '';
+                }
+            });
+
+            // 출력 채널 드롭다운 변경 시 수동 입력 필드 비우기
+            outputChannelDropdown.addEventListener('change', () => {
+                if (outputChannelDropdown.value) {
+                    manualOutputChannel.value = '';
+                }
+            });
+
+            // 수동 출력 채널 입력 시 드롭다운 선택 해제
+            manualOutputChannel.addEventListener('input', () => {
+                if (manualOutputChannel.value) {
+                    outputChannelDropdown.value = '';
+                }
+            });
+        });
+    </script>
+</body>
+</html>
