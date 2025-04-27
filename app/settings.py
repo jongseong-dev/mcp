@@ -17,4 +17,6 @@ CHANNEL_ID: str = str(os.getenv("CHANNEL_ID"))
 RESULT_CHANNEL_ID: str = str(os.getenv("RESULT_CHANNEL_ID"))
 CLAUDE_API_KEY = os.getenv("CLAUDE_API_KEY")
 CLAUDE_API_URL = "https://api.anthropic.com/v1/messages"
-CLAUDE_MODEL = "claude-3-opus-20240229"
+CLAUDE_MODEL = "claude-3-7-sonnet-20250219"
+
+SLACK_TEXT_LIMIT = 2900

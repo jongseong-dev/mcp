@@ -17,8 +17,14 @@
             {% endfor %}
         </select>
 
+        <label for="period_days">Slack 메시지 조회 기간 (며칠 전부터)</label>
+        <input type="number" id="period_days" name="period_days" value="3" min="1" required>
+
+        <label for="message_limit">Slack 최대 메시지 수</label>
+        <input type="number" id="message_limit" name="message_limit" value="10" min="1" required>
+
         <label for="message">User Message (Claude에게 보낼 질문)</label>
-        <textarea id="message" name="message" rows="6" required placeholder="Slack 대화 문맥과 함께 Claude에게 질문할 내용을 입력하세요"></textarea>
+        <textarea id="message" name="message" rows="6" required placeholder="Slack 문맥과 함께 Claude에게 보낼 질문 입력"></textarea>
 
         <button type="submit">Send to Claude</button>
     </form>
