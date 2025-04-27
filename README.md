@@ -2,18 +2,29 @@
 
 ---
 
-# 🎯 목표
+# 📦 프로젝트 구조
+```
+/
+├── app/
+│   ├── main.py
+│   ├── router.py
+│   ├── utils.py
+│   ├── settings.py
+│   └── schemas.py
+├── templates/
+│   ├── base.html
+│   ├── mcp.html
+│   ├── result.html
+├── storage/
+│   └── session.json
+├── .env
+├── requirements.txt
+├── Dockerfile
+├── docker-compose.yml
+├── Makefile
+└── README.md
+```
 
-> - 설치 방법을 조금 더 상세히 쓰고  
-> - 프로젝트 실행 방법을 **1. `make dev` (로컬 실행)** 와 **2. `docker-compose` 실행** 두 가지로 나눠서 설명하자.
-
-✅ 두 방법 모두 README에 명확하게 구분해서 써줄게.
-
----
-
-# 📝 보강된 `README.md` - 설치 & 실행 방법
-
-(중간 나머지 부분은 그대로 두고 이 부분만 "보강"하는 거야!)
 
 ---
 
