@@ -7,3 +7,7 @@ repos:
         entry: python -c "import subprocess; subprocess.run(['uv', 'pip', 'freeze'], stdout=open('requirements.in', 'w'))"
         language: system
         pass_filenames: false
+      - id: uv-pip-compile
+        name: Update requirements.txt from requirements.in
+        entry: python -c "import subprocess; subprocess.run(['uv', 'pip', 'compile', 'requirements.in'], stdout=open('requirements.txt', 'w'))"
+        language: system
