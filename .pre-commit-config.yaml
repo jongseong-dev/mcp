@@ -1,0 +1,9 @@
+# .pre-commit-config.yaml
+repos:
+  - repo: local
+    hooks:
+      - id: sync-requirements
+        name: Sync requirements.in
+        entry: python -c "import subprocess; subprocess.run(['uv', 'pip', 'freeze'], stdout=open('requirements.in', 'w'))"
+        language: system
+        pass_filenames: false
